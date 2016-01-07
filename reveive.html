@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>管理内容页</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="apple-touch-fullscreen" content="yes">
+    <meta name="full-screen" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="white">
+    <meta name="format-detection" content="telephone=no"/>
+    <meta name="format-detection" content="address=no">
+    <link rel="stylesheet" href="css/base_tel.css">
+    <style>
+        html,body{
+           width:100%;
+           height: 100%; 
+        } 
+    </style>  
+<body class="bodycolor"> 
+  <div class="rd_wrap">
+     <div class="rd_hd">
+        <img src="images/b2.jpg" height="100%" width="100%">
+     </div>
+     <div class="rd_cont">
+        <div class="rd_cont1">
+             正在读取语音...   
+        </div>
+        <div class="rd_cont2">
+              <input type="button" value="我也要发语音" class="bd_rd1" /> 
+        </div>
+       
+        <div class="rd_cont3">
+              <input type="button" value="参与活动" class="bd_rd4" /> 
+        </div>
+
+     </div>
+  </div>     
+</body>
+  <script type="text/javascript" src="js/jquery-2.1.1.min.js"></script> 
+
+<script type="text/javascript">
+window.shareData = {
+	"imgUrl":"<?php echo STYLE_URL;?>/style/game.zlvyun.com/friendsvoice.game.zlvyun.com/images/logo.jpg",
+	"timeLineLink":'http://<?php echo $_SERVER['HTTP_HOST']?>/index.php/index/share_<?php echo $this->SubjectRow['id']?>.html?InterfaceId=<?php echo $this->Param['InterfaceId'];?>&voice_id=<?php echo $this->voice_id?>&second=<?php echo $this->second?>',
+	"tTitle":"播放语音",
+	"tContent":"<?php echo $this->second.'s';?>",
+	"ShareTime":0,
+	"localId":''
+};
+function WeixinApiJS(wx){
+	<?php if(!empty($this->voice_id)):?>
+	wx.downloadVoice({
+		serverId:'<?php echo $this->voice_id;?>',
+		isShowProgressTips: 1,
+		success: function (res) {			
+			window.shareData.localId = res.localId;
+			//下载完成执行
+		    var timer1 = setTimeout(function(){
+		      $(".open_content").html('<div class="voice_img voice_img_green voice_img_open"><p class="voice_work_tips voice_work_time"><span>'+<?php echo $this->Param['second'];?>+'</span>s</p></div>');
+		      wx.playVoice({
+				localId:window.shareData.localId
+			  });
+		      function timeleave(){
+		          if(timelast>0){
+		              $(".voice_work_time span").text(timelast);
+		              timeout = setTimeout(function(){timeleave();},1000);
+		              timelast--;
+		          }
+		          else{
+		            $(".open_content").html('<div class="voice_img voice_img_green voice_img_stop"><p class="voice_work_tips voice_work_time"><span>'+<?php echo $this->Param['second'];?>+'</span>s</p></div>');
+		          }
+		      }
+		       var timelast = parseInt($(".voice_work_time span").text());
+		        timeleave();
+		    },2000); 
+		}
+	});
+	<?php endif;?>
+	$(".open_content").click(function(){
+		$(".open_content").children().attr("class","voice_img voice_img_green voice_img_open");
+		wx.playVoice({
+			localId:window.shareData.localId
+		});
+		var timelast = parseInt($(".voice_work_time span").text());
+		//alert(timelast);
+		timeleave();
+		function timeleave(){
+			if(timelast>0){
+				$(".voice_work_time span").text(timelast);
+				timeout = setTimeout(function(){timeleave();},1000);
+				timelast--;
+			}else{
+				$(".open_content").html('<div class="voice_img voice_img_green voice_img_stop"><p class="voice_work_tips voice_work_time"><span>'+<?php echo $this->Param['second'];?>+'</span>s</p></div>');
+			}
+		}
+	});
+
+	//我也要发语音
+	$('#voice_btn').click(function(){
+		<?php if(!empty($this->SubjectRow['ads_url']) && empty($this->SubjectRow['ads_desc'])):?>
+		window.location.href="<?php echo $this->SubjectRow['ads_url'];?>";
+		<?php else:?>
+		window.location.href="<?php echo 'http://'.$_SERVER['HTTP_HOST'].'/index.php/index/view_'.$this->SubjectRow['id'].'.html?InterfaceId='.$this->Param['InterfaceId'];?>";
+		<?php endif;?>
+	});
+	
+	function ShareSubmit(){
+		$.post('/index.php/index/share_<?php echo $this->Param['id'];?>.html',{
+			'ajax':'0',
+			'option':'sharesubmit'
+		},function(jsontxt){},'json');
+	}
+}
+//自定义分享
+function onBridgeReady() {
+	WeixinJSBridge.on('menu:share:timeline',function(argv) {
+		WeixinJSBridge.invoke('shareTimeline',{
+			'img_url':window.shareData.imgUrl,
+			'img_width':'640',
+			'img_height':'640',
+			'link':window.shareData.timeLineLink,
+			'desc':window.shareData.tContent,
+			'title':window.shareData.tContent,
+		},function(res) {
+			if(ShareTime == 0){ShareTime=10;}
+
+		});
+	});
+	WeixinJSBridge.on('menu:share:appmessage',function(argv) {
+		WeixinJSBridge.invoke('sendAppMessage', {
+			'img_url':window.shareData.imgUrl,
+			'img_width':'640',
+			'img_height':'640',
+			'link':window.shareData.timeLineLink,
+			'desc':window.shareData.tContent,
+			'title':window.shareData.tTitle,
+		},function(res) {
+			if(ShareTime == 0){ShareTime=10;}
+		});
+	});
+}
+
+if (typeof WeixinJSBridge == "undefined") {
+	if (document.addEventListener) {
+		document.addEventListener('WeixinJSBridgeReady', onBridgeReady, false);
+	} else if (document.attachEvent) {
+		document.attachEvent('WeixinJSBridgeReady', onBridgeReady);
+		document.attachEvent('onWeixinJSBridgeReady', onBridgeReady);
+	}
+} else {
+	onBridgeReady();
+}
+document.addEventListener('touchmove', function(event) {
+    event.preventDefault();
+}, false);
+</script>
+<script src="http://api.zlvyun.com/apijs/?InterfaceId=<?php echo $this->Param['InterfaceId'];?>&url=<?php echo urlencode($this->AppUrl.'/index/share_'.$this->SubjectRow['id'].'.html?InterfaceId='.$this->Param['InterfaceId'].'&voice_id='.$this->Param['voice_id'].'&second='.$this->Param['second']);?>"></script>
+</html>
+
+ 
